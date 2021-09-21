@@ -9,10 +9,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 type Config struct {
-	ListenPort     string
 	GoogleSheetApi string
 }
 
@@ -54,7 +54,6 @@ type ObjectAttributes struct {
 	LastCommit   LastCommit `json:"last_commit"`
 	Title        string     `json:"title"`
 	State        string     `json:"state"`
-	Action       string     `json:"action"`
 }
 
 type GitlabPayload struct {
@@ -140,9 +139,10 @@ func sendMessageToSlack(webhook, message string) {
 }
 
 func main() {
-	config := loadConfig()
 
 	http.HandleFunc("/gitlab", func(w http.ResponseWriter, r *http.Request) {
+		config := loadConfig()
+
 		var payload GitlabPayload
 
 		err := json.NewDecoder(r.Body).Decode(&payload)
@@ -152,7 +152,7 @@ func main() {
 		}
 
 		if payload.ObjectKind == "merge_request" && payload.EventType == "merge_request" {
-			if payload.ObjectAttributes.State == "merged" && payload.ObjectAttributes.Action == "merge" {
+			if payload.ObjectAttributes.State == "merged" {
 				data := getDataGoogleSheet(config.GoogleSheetApi)
 
 				slackUrl := data.Content.Channels[payload.Project.WebURL]
@@ -173,7 +173,17 @@ func main() {
 		}
 	})
 
-	err := http.ListenAndServe(":"+config.ListenPort, nil)
+	port := "8080"
+
+	argsWithoutProg := os.Args[1:]
+
+	if len(argsWithoutProg) > 0 {
+		port = argsWithoutProg[0]
+	}
+
+	fmt.Println("http://localhost:" + port)
+
+	err := http.ListenAndServe(":" + port, nil)
 	if err != nil {
 		return
 	}
