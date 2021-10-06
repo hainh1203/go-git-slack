@@ -54,6 +54,7 @@ type ObjectAttributes struct {
 	LastCommit   LastCommit `json:"last_commit"`
 	Title        string     `json:"title"`
 	State        string     `json:"state"`
+	Action       string     `json:"action"`
 }
 
 type GitlabPayload struct {
@@ -152,7 +153,7 @@ func main() {
 		}
 
 		if payload.ObjectKind == "merge_request" && payload.EventType == "merge_request" {
-			if payload.ObjectAttributes.State == "merged" {
+			if payload.ObjectAttributes.State == "merged" && payload.ObjectAttributes.Action == "merge" {
 				data := getDataGoogleSheet(config.GoogleSheetApi)
 
 				slackUrl := data.Content.Channels[payload.Project.WebURL]
@@ -183,7 +184,7 @@ func main() {
 
 	fmt.Println("http://localhost:" + port)
 
-	err := http.ListenAndServe(":" + port, nil)
+	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		return
 	}
