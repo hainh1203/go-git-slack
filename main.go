@@ -40,7 +40,8 @@ type Author struct {
 }
 
 type Project struct {
-	WebURL string `json:"web_url"`
+	WebURL            string `json:"web_url"`
+	PathWithNamespace string `json:"path_with_namespace"`
 }
 
 type LastCommit struct {
@@ -98,6 +99,7 @@ func getDataGoogleSheet(api string) GoogleSheetResponse {
 }
 
 func makeMessage(
+	repository string,
 	mergedBy string,
 	branchBase string,
 	branchHead string,
@@ -111,6 +113,7 @@ func makeMessage(
 	}
 
 	return ":tada::tada: *MERGED* :tada::tada: " +
+		"\n • Repository: `" + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
 		"\n • Merged By: " + mergedBy +
 		"\n • Author: " + author +
@@ -160,6 +163,7 @@ func main() {
 
 				if slackUrl != "" {
 					message := makeMessage(
+						payload.Project.PathWithNamespace,
 						payload.User.Email,
 						payload.ObjectAttributes.TargetBranch,
 						payload.ObjectAttributes.SourceBranch,
