@@ -113,7 +113,7 @@ func makeMessage(
 	}
 
 	return ":tada::tada: *MERGED* :tada::tada: " +
-		"\n • Repository: `" + repository +
+		"\n • Repository: " + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
 		"\n • Merged By: " + mergedBy +
 		"\n • Author: " + author +
