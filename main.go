@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -32,7 +33,8 @@ func loadConfig() *Config {
 }
 
 type User struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
 }
 
 type Author struct {
@@ -108,7 +110,7 @@ func makeMessage(
 	pull string,
 	mention string,
 ) string {
-	if mergedBy != author && mention != "" {
+	if !strings.Contains(author, mergedBy) && mention != "" {
 		author = "<@" + mention + ">"
 	}
 
@@ -164,7 +166,7 @@ func main() {
 				if slackUrl != "" {
 					message := makeMessage(
 						payload.Project.PathWithNamespace,
-						payload.User.Email,
+						payload.User.Username,
 						payload.ObjectAttributes.TargetBranch,
 						payload.ObjectAttributes.SourceBranch,
 						payload.ObjectAttributes.LastCommit.Author.Email,
