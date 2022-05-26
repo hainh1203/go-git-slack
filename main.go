@@ -68,9 +68,14 @@ type GitlabPayload struct {
 	Project          Project          `json:"project"`
 }
 
+type Channel struct {
+	SlackUrl string `json:"slack_url"`
+	Actions  string `json:"actions"`
+}
+
 type Content struct {
-	Channels map[string]string `json:"channels"`
-	Mentions map[string]string `json:"mentions"`
+	Channels map[string]Channel `json:"channels"`
+	Mentions map[string]string  `json:"mentions"`
 }
 
 type GoogleSheetResponse struct {
@@ -100,7 +105,7 @@ func getDataGoogleSheet(api string) GoogleSheetResponse {
 	return googleSheetResponse
 }
 
-func makeMessage(
+func makeMergedMessage(
 	repository string,
 	mergedBy string,
 	branchBase string,
@@ -118,6 +123,22 @@ func makeMessage(
 		"\n • Repository: " + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
 		"\n • Merged By: " + mergedBy +
+		"\n • Author: " + author +
+		"\n • Title: " + commit +
+		"\n • Pull Request: <" + pull + "|Click here>"
+}
+
+func makeOpenedMessage(
+	repository string,
+	branchBase string,
+	branchHead string,
+	author string,
+	commit string,
+	pull string,
+) string {
+	return ":alphabet-yellow-p::alphabet-yellow-l::alphabet-yellow-e::alphabet-yellow-a::alphabet-yellow-s::alphabet-yellow-e::alphabet-white-r::alphabet-white-e::alphabet-white-v::alphabet-white-i::alphabet-white-e::alphabet-white-w: " +
+		"\n • Repository: " + repository +
+		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
 		"\n • Author: " + author +
 		"\n • Title: " + commit +
 		"\n • Pull Request: <" + pull + "|Click here>"
@@ -158,13 +179,15 @@ func main() {
 		}
 
 		if payload.ObjectKind == "merge_request" && payload.EventType == "merge_request" {
-			if payload.ObjectAttributes.State == "merged" && payload.ObjectAttributes.Action == "merge" {
-				data := getDataGoogleSheet(config.GoogleSheetApi)
+			data := getDataGoogleSheet(config.GoogleSheetApi)
 
-				slackUrl := data.Content.Channels[payload.Project.WebURL]
+			channel := data.Content.Channels[payload.Project.WebURL]
 
-				if slackUrl != "" {
-					message := makeMessage(
+			if channel.SlackUrl != "" {
+				if payload.ObjectAttributes.State == "merged" &&
+					payload.ObjectAttributes.Action == "merge" &&
+					strings.Contains(channel.Actions, payload.ObjectAttributes.Action) {
+					sendMessageToSlack(channel.SlackUrl, makeMergedMessage(
 						payload.Project.PathWithNamespace,
 						payload.User.Username,
 						payload.ObjectAttributes.TargetBranch,
@@ -173,8 +196,20 @@ func main() {
 						payload.ObjectAttributes.Title,
 						payload.ObjectAttributes.URL,
 						data.Content.Mentions[payload.ObjectAttributes.LastCommit.Author.Email],
-					)
-					sendMessageToSlack(slackUrl, message)
+					))
+				}
+
+				if payload.ObjectAttributes.State == "opened" &&
+					payload.ObjectAttributes.Action == "open" &&
+					strings.Contains(channel.Actions, payload.ObjectAttributes.Action) {
+					sendMessageToSlack(channel.SlackUrl, makeOpenedMessage(
+						payload.Project.PathWithNamespace,
+						payload.ObjectAttributes.TargetBranch,
+						payload.ObjectAttributes.SourceBranch,
+						payload.ObjectAttributes.LastCommit.Author.Email,
+						payload.ObjectAttributes.Title,
+						payload.ObjectAttributes.URL,
+					))
 				}
 			}
 		}
