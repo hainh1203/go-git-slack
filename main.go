@@ -135,7 +135,12 @@ func makeOpenedMessage(
 	author string,
 	commit string,
 	pull string,
+	mention string,
 ) string {
+	if mention != "" {
+		author = "<@" + mention + ">"
+	}
+
 	return ":alphabet-yellow-p::alphabet-yellow-l::alphabet-yellow-e::alphabet-yellow-a::alphabet-yellow-s::alphabet-yellow-e::alphabet-white-r::alphabet-white-e::alphabet-white-v::alphabet-white-i::alphabet-white-e::alphabet-white-w: " +
 		"\n • Repository: " + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
@@ -209,6 +214,7 @@ func main() {
 						payload.ObjectAttributes.LastCommit.Author.Email,
 						payload.ObjectAttributes.Title,
 						payload.ObjectAttributes.URL,
+						data.Content.Mentions[payload.ObjectAttributes.LastCommit.Author.Email],
 					))
 				}
 			}
