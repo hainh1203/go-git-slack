@@ -113,12 +113,7 @@ func makeMergedMessage(
 	author string,
 	commit string,
 	pull string,
-	mention string,
 ) string {
-	if !strings.Contains(author, mergedBy) && mention != "" {
-		author = "<@" + mention + ">"
-	}
-
 	return ":tada::tada: *MERGED* :tada::tada: " +
 		"\n • Repository: " + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
@@ -135,12 +130,7 @@ func makeOpenedMessage(
 	author string,
 	commit string,
 	pull string,
-	mention string,
 ) string {
-	if mention != "" {
-		author = "<@" + mention + ">"
-	}
-
 	return ":alphabet-yellow-p::alphabet-yellow-l::alphabet-yellow-e::alphabet-yellow-a::alphabet-yellow-s::alphabet-yellow-e::alphabet-white-r::alphabet-white-e::alphabet-white-v::alphabet-white-i::alphabet-white-e::alphabet-white-w: " +
 		"\n • Repository: " + repository +
 		"\n • Branch: `" + branchHead + "` into `" + branchBase + "`" +
@@ -170,6 +160,16 @@ func sendMessageToSlack(webhook, message string) {
 	}(resp.Body)
 }
 
+func getMentionByEmail(mentions map[string]string, email string) string {
+	var mention = mentions[email]
+
+	if mention != "" {
+		return "<@" + mention + ">"
+	}
+
+	return email
+}
+
 func main() {
 
 	http.HandleFunc("/gitlab", func(w http.ResponseWriter, r *http.Request) {
@@ -194,13 +194,12 @@ func main() {
 					strings.Contains(channel.Actions, payload.ObjectAttributes.Action) {
 					sendMessageToSlack(channel.SlackUrl, makeMergedMessage(
 						payload.Project.PathWithNamespace,
-						payload.User.Username,
+						getMentionByEmail(data.Content.Mentions, payload.User.Email),
 						payload.ObjectAttributes.TargetBranch,
 						payload.ObjectAttributes.SourceBranch,
-						payload.ObjectAttributes.LastCommit.Author.Email,
+						getMentionByEmail(data.Content.Mentions, payload.ObjectAttributes.LastCommit.Author.Email),
 						payload.ObjectAttributes.Title,
 						payload.ObjectAttributes.URL,
-						data.Content.Mentions[payload.ObjectAttributes.LastCommit.Author.Email],
 					))
 				}
 
@@ -211,10 +210,9 @@ func main() {
 						payload.Project.PathWithNamespace,
 						payload.ObjectAttributes.TargetBranch,
 						payload.ObjectAttributes.SourceBranch,
-						payload.ObjectAttributes.LastCommit.Author.Email,
+						getMentionByEmail(data.Content.Mentions, payload.ObjectAttributes.LastCommit.Author.Email),
 						payload.ObjectAttributes.Title,
 						payload.ObjectAttributes.URL,
-						data.Content.Mentions[payload.ObjectAttributes.LastCommit.Author.Email],
 					))
 				}
 			}
