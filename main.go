@@ -194,7 +194,7 @@ func main() {
 					strings.Contains(channel.Actions, payload.ObjectAttributes.Action) {
 					sendMessageToSlack(channel.SlackUrl, makeMergedMessage(
 						payload.Project.PathWithNamespace,
-						getMentionByEmail(data.Content.Mentions, payload.User.Email),
+						payload.User.Username,
 						payload.ObjectAttributes.TargetBranch,
 						payload.ObjectAttributes.SourceBranch,
 						getMentionByEmail(data.Content.Mentions, payload.ObjectAttributes.LastCommit.Author.Email),
